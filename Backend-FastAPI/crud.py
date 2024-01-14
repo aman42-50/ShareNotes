@@ -48,7 +48,7 @@ def update_note(note_url: str, request: schemas.Note, db: Session):
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=content)
 
     db.query(models.Note).filter(models.Note.note_url == note_url).update(
-        request.model_dump(exclude_none=True))
+        request)
     db.commit()
 
     content = {'success': True,

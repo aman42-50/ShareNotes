@@ -7,11 +7,11 @@ const TextEditor = () => {
 
     const { noteID } = useParams()
 
-    useEffect(() => {
-        socket.send(noteID.slice(1))
-    }, [socket.readyState])
-
     const [value, setValue] = useState("")
+
+    socket.onopen = () => {
+        socket.send(noteID.slice(1))
+    }
 
     socket.onmessage = (event) => {
         setValue(event.data);
