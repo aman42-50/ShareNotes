@@ -1,5 +1,6 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.websockets import WebSocketState
 from sqlalchemy.orm import Session
 import secrets
 
@@ -41,6 +42,16 @@ def get_db():
 manager = ConnectionManager()
 
 
+@app.get("/exists/{note_id}/")
+def exists(note_id, db: Session = Depends(get_db)):
+    exists = db.query(models.Note).filter(
+        models.Note.note_url == note_id).first() is not None
+
+    data = {'exists': exists}
+
+    return data
+
+
 @app.get("/new/", response_model=schemas.Note)
 def new_note(db: Session = Depends(get_db)):
     note_url = secrets.token_urlsafe(8)
@@ -51,8 +62,8 @@ def new_note(db: Session = Depends(get_db)):
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str, db: Session = Depends(get_db)):
 
-    await manager.connect(websocket)
-    note_id = await websocket.receive_text()
+    await manager.connect(websocket, client_id)
+    note_id = client_id
     note_data = crud.get_note(db, note_id)
     note_data = note_data.to_dict()
     flag = False
@@ -63,12 +74,15 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, db: Session =
         while True:
             data = await websocket.receive_text()
             flag = True
-            await manager.broadcast(data)
+            await manager.broadcast(data, note_id)
 
     except WebSocketDisconnect:
         if flag:
-            request = {'note_url': note_id, 'note_content': data}
+            if websocket.application_state == WebSocketState.CONNECTED:
+                request = {'note_url': note_id, 'note_content': data}
 
-            crud.update_note(note_id, request, db)
+                crud.update_note(note_id, request, db)
 
-        manager.disconnect(websocket)
+    finally:
+        if websocket.application_state == WebSocketState.CONNECTED:
+            manager.disconnect(websocket, note_id)
