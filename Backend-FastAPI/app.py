@@ -1,8 +1,9 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Response
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocketState
 from sqlalchemy.orm import Session
 import secrets
+import json
 
 from websocket_manager import ConnectionManager
 from database import engine, SessionLocal
@@ -52,10 +53,10 @@ def exists(note_id, db: Session = Depends(get_db)):
     return data
 
 
-@app.get("/new/", response_model=schemas.Note)
-def new_note(db: Session = Depends(get_db)):
+@app.get("/new/{note_language}/", response_model=schemas.Note)
+def new_note(note_language: str, db: Session = Depends(get_db)):
     note_url = secrets.token_urlsafe(8)
-    db_note = crud.create_note(db, note_url)
+    db_note = crud.create_note(db, note_url, note_language)
     return db_note
 
 
@@ -68,18 +69,23 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, db: Session =
     note_data = note_data.to_dict()
     flag = False
 
-    await manager.send_personal_message(note_data['note_content'], websocket)
+    init_data = {'note_content': note_data['note_content'],
+                 'note_language': note_data['note_language']}
+    await websocket.send_json(init_data)
 
     try:
         while True:
-            data = await websocket.receive_text()
+            data = await websocket.receive_json()
+
             flag = True
             await manager.broadcast(data, note_id)
 
     except WebSocketDisconnect:
         if flag:
             if websocket.application_state == WebSocketState.CONNECTED:
-                request = {'note_url': note_id, 'note_content': data}
+                request = {
+                    'note_url': note_id, 'note_content': data['note_content'], 'note_language': data['note_language']
+                }
 
                 crud.update_note(note_id, request, db)
 

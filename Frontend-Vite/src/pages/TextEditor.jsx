@@ -5,6 +5,7 @@ import Editor from "@monaco-editor/react";
 const TextEditor = () => {
     const { noteID } = useParams();
     const [value, setValue] = useState("");
+    const [language, setLanguage] = useState('plain_text')
     const socketRef = useRef(null);
 
     useEffect(() => {
@@ -14,7 +15,10 @@ const TextEditor = () => {
         // Event handler when a message is received
         socketRef.current.onmessage = (event) => {
             console.log('WebSocket message received:', event.data);
-            setValue(event.data);
+            const data = JSON.parse(event.data)
+
+            setLanguage(data.note_language)
+            setValue(data.note_content);
         };
 
         // Event handler for WebSocket errors
@@ -37,8 +41,9 @@ const TextEditor = () => {
 
     const handleChange = (newValue, e) => {
       setValue(newValue);
-      socketRef.current.send(newValue);
-      console.log(newValue);
+      let newData = {'note_content': newValue, 'note_language': language}
+      socketRef.current.send(JSON.stringify(newData));
+      console.log(newData);
     };
 
     return (
@@ -46,6 +51,7 @@ const TextEditor = () => {
             <Editor
                 id="editor"
                 value={value}
+                language={language}
                 onChange={handleChange}
                 options={{ minimap: { enabled: false } }}
                 theme="vs-dark"

@@ -17,8 +17,9 @@ def get_note(db: Session, note_url: str):
     return note
 
 
-def create_note(db: Session, note_url: str):
-    new_note = models.Note(note_url=note_url)
+def create_note(db: Session, note_url: str, note_language):
+    new_note = models.Note(
+        note_url=note_url, note_language=note_language)
     db.add(new_note)
     db.commit()
     db.refresh(new_note)
