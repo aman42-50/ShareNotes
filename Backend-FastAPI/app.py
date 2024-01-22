@@ -4,6 +4,7 @@ from starlette.websockets import WebSocketState
 from sqlalchemy.orm import Session
 import secrets
 import json
+from collections import defaultdict
 
 from websocket_manager import ConnectionManager
 from database import engine, SessionLocal
@@ -60,23 +61,30 @@ def new_note(note_language: str, db: Session = Depends(get_db)):
     return db_note
 
 
+recent_data = defaultdict(None)
+
+
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str, db: Session = Depends(get_db)):
+    global recent_data
 
     await manager.connect(websocket, client_id)
     note_id = client_id
-    note_data = crud.get_note(db, note_id)
-    note_data = note_data.to_dict()
-    flag = False
+    if recent_data[note_id] is not None:
+        await websocket.send_json(recent_data[note_id])
+    else:
+        note_data = crud.get_note(db, note_id)
+        note_data = note_data.to_dict()
+        init_data = {'note_content': note_data['note_content'],
+                     'note_language': note_data['note_language']}
+        await websocket.send_json(init_data)
 
-    init_data = {'note_content': note_data['note_content'],
-                 'note_language': note_data['note_language']}
-    await websocket.send_json(init_data)
+    flag = False
 
     try:
         while True:
             data = await websocket.receive_json()
-
+            recent_data[note_id] = data
             flag = True
             await manager.broadcast(data, note_id)
 
