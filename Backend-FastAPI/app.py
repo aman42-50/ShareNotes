@@ -3,8 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocketState
 from sqlalchemy.orm import Session
 import secrets
-import json
-from collections import defaultdict
 
 from websocket_manager import ConnectionManager
 from database import engine, SessionLocal
@@ -12,7 +10,6 @@ import models
 import schemas
 import crud
 
-import pdb
 
 app = FastAPI()
 
@@ -61,7 +58,7 @@ def new_note(note_language: str, db: Session = Depends(get_db)):
     return db_note
 
 
-recent_data = defaultdict(None)
+recent_data = {}
 
 
 @app.websocket("/ws/{client_id}")
@@ -70,7 +67,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, db: Session =
 
     await manager.connect(websocket, client_id)
     note_id = client_id
-    if recent_data[note_id] is not None:
+    if note_id in recent_data:
         await websocket.send_json(recent_data[note_id])
     else:
         note_data = crud.get_note(db, note_id)
