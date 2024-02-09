@@ -17,7 +17,7 @@ const NewNote = () => {
     const [open, setOpen] = useState(false)
     const handleOpen = () => setOpen(!open);
     const handleClick = async (language) => {
-        let response = await axios.get(`http://localhost:8000/new/${language}/`)
+        let response = await axios.get(`https://share-notes-api.vercel.app/new/${language}/`)
             .then((response) => {
                 // Success
                 const note_id = response.data.note_url
