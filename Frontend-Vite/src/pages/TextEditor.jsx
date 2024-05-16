@@ -10,7 +10,7 @@ const TextEditor = () => {
 
     useEffect(() => {
         // Create and open the WebSocket connection when the component mounts
-        socketRef.current = new WebSocket(`wss://share-notes-api.vercel.app/ws/${noteID.slice(1)}`);
+        socketRef.current = new WebSocket(`ws://localhost:8000/ws/${noteID.slice(1)}`);
 
         // Event handler when a message is received
         socketRef.current.onmessage = (event) => {

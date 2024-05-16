@@ -10,7 +10,7 @@ const SearchBar = () => {
     const handleClick = async () => {
         let note_id = document.getElementById('input_id').value
 
-        let response = await axios.get(`https://share-notes-api.vercel.app/exists/${note_id}`)
+        let response = await axios.get(`http://localhost:8000/exists/${note_id}`)
             .then((response) => {
                 // Success
                 let exists = response.data.exists

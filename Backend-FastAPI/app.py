@@ -15,7 +15,6 @@ app = FastAPI()
 
 origins = [
     "http://localhost:5173",
-    "https://share-notes-indol.vercel.app",
 ]
 
 app.add_middleware(
@@ -72,6 +71,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, db: Session =
         await websocket.send_json(recent_data[note_id])
     else:
         note_data = crud.get_note(db, note_id)
+        print(note_data)
         note_data = note_data.to_dict()
         init_data = {'note_content': note_data['note_content'],
                      'note_language': note_data['note_language']}

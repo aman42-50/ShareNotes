@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 import models
 import schemas
 
+import pdb
 
 def get_note(db: Session, note_url: str):
     note = db.query(models.Note).filter(
@@ -18,6 +19,7 @@ def get_note(db: Session, note_url: str):
 
 
 def create_note(db: Session, note_url: str, note_language):
+    print("request reached")
     new_note = models.Note(
         note_url=note_url, note_language=note_language)
     db.add(new_note)
